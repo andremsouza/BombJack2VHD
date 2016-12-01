@@ -25,8 +25,11 @@ architecture behav of keyviewer is
 	signal JDELAY: std_logic_vector(31 downto 0);
 	
 	signal JACKSTATE: std_logic_vector(7 downto 0);
+	signal JUMP: std_logic;
+	signal FALL: std_logic;
+	signal PLATFORM: std_logic_vector(1199 downto 0) <= 0; -- new
 begin
-
+	PLATFORM(619 downto 609) <= "1111111111";
 	process(clk, reset) --Jack movement
 	begin
 		if(reset = '1') then
@@ -35,17 +38,29 @@ begin
 			JACKPOS <= x"026B";
 			JDELAY <= x"00000000";
 			JACKSTATE <= x"00";
+			JUMP <= '0';
 		elsif (clk'event and clk = '1') then
+			
 			case JACKSTATE is
 				when x"00" =>
 					case key is
 						when x"61" => -- A
 							if(not((conv_integer(JACKPOS) mod 40) = 0)) then
 								JACKPOS <= JACKPOS - x"01";
+								if(PLATFORM(conv_integer(JACKPOS) + 40) = 0) then
+									FALL <= 1;
+								end if;
 							end if;
+						when x"20" => -- Space -- new
+							if(not(JUMP)) then
+								JUMP <= '1';
+							end if; -- end new
 						when x"64" => -- D
 							if(not((conv_integer(JACKPOS) mod 40) = 39)) then
 								JACKPOS <= JACKPOS + x"01";
+								if(PLATFORM(conv_integer(JACKPOS) + 40) = 0) then
+									FALL <= 1;
+								end if;
 							end if;
 						when others =>
 					end case;
@@ -61,7 +76,26 @@ begin
 			end case;
 		end if;
 	end process;
-	
+	process(clk, JUMP, FALL) -- Jump state --new
+		variable delay: std_logic_vector(31 downto 0) := x"00000000";
+	begin
+		if(clk'event and clk='1' and (JUMP='1' or FALL='1') then
+			while(delay <= 50000000) loop --ajustar
+				if(JACKPOS < x"28" or FALL = '1' or PLATFORM(conv_integer(JACKPOS) - 40) = '1') then  --40
+					exit;
+				end if;
+				JACKPOS <= JACKPOS - x"28"; --40
+				delay <= delay + x"01";
+			end loop;
+			JUMP <= '0';
+			FALL <= '1';
+			while(JACKPOS > x"487" or PLATFORM(conv_integer(JACKPOS) + 40) = '0') loop --1159
+				JACKPOS <= JACKPOS + x"28";
+			end loop;
+			FALL <='0';
+		end if;
+	end process; -- end new
+			
 	process(clk, reset) -- Draw video
 	begin
 		if (reset='1') then
@@ -86,6 +120,7 @@ begin
 				when x"01" => -- videodraw
 					videodraw <= '0';
 					VIDEOE <= x"02";
+					
 				when x"02" => -- draw jack
 					
 					videochar(15 downto 12) <= "0000";
@@ -100,39 +135,18 @@ begin
 				when x"03" => --videodraw
 					videodraw <= '0';
 					VIDEOE <= x"04";
+				when x"04" =>
+					videochar(15 downto 12) <= "0000";
+					videochar(11 downto 8) <= x"A";
+					videochar(7 downto 0) <= x"3A";
+					videopos(15 downto 0) <= 614;
+					videodraw <= '1';
+					VIDEOE <= x"05"
 				when others =>
 					videodraw <= '0';
 					VIDEOE <= x"00";
 			end case;
 		end if;
 	end process;
-
---	process(clk, reset)
---	variable state: std_logic_vector(3 downto 0);
---	begin
---		if(reset = '1') then
---			state := x"0";
---			videodraw <= '0';
---		elsif(clk'event and clk = '1') then
---			if(key /= x"FF") then
---				case state is
---					when x"0" =>
---						videopos <= x"002D";
---						videochar(7 downto 0) <= key;
---						videochar(11 downto 8) <= x"C";
---						videochar(15 downto 12) <= x"1";
---						videodraw <= '1';
---						state := x"1";
---					when others =>
---						videopos <= x"002D";
---						videochar(7 downto 0) <= key;
---						videochar(11 downto 8) <= x"C";
---						videochar(15 downto 12) <= x"1";
---						videodraw <= '0';
---						state := x"0";
---				end case;
---			end if;
---		end if;
---	end process;
 
 end behav;

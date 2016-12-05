@@ -25,48 +25,83 @@ architecture behav of keyviewer is
 	signal JDELAY: std_logic_vector(31 downto 0);
 	
 	signal JACKSTATE: std_logic_vector(7 downto 0);
-	signal JUMP: std_logic;
-	signal FALL: std_logic;
-	signal PLATFORM: std_logic_vector(1199 downto 0) <= 0; -- new
+	signal JUMPSTATE: std_logic_vector(7 downto 0);
+	signal PLATFORM: std_logic_vector(1199 downto 0) := (others => '0'); -- new
 begin
-	PLATFORM(619 downto 609) <= "1111111111";
+	PLATFORM(619 downto 609) <= "11111111111";
+	PLATFORM(39 downto 0) <= "1111111111111111111111111111111111111111";
+	PLATFORM(1199 downto 1160) <= "1111111111111111111111111111111111111111";
 	process(clk, reset) --Jack movement
+		variable delayj1: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para mudar de posicao -- ajustar max
+		variable delayj2: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para parar de subir -- ajustar max
 	begin
 		if(reset = '1') then
 			JACKCHAR <= x"24";
 			JACKCOLOR <= x"C";
 			JACKPOS <= x"026B";
 			JDELAY <= x"00000000";
+			JUMPSTATE <= x"00";
 			JACKSTATE <= x"00";
-			JUMP <= '0';
 		elsif (clk'event and clk = '1') then
-			
-			case JACKSTATE is
+			case JUMPSTATE is -- Controle de pulo
+				when x"00" => -- Parado
+					
+				when x"01" => -- Subindo
+					if(PLATFORM(conv_integer(JACKPOS) - 40) = '0') then
+						if(delayj2 >= x"0000000F") then
+							delayj2 := x"00000000";
+							JUMPSTATE <= x"02";
+						else
+							if(delayj1 >= x"00005FFF") then
+								delayj1 := x"00000000";
+								delayj2 := delayj2 + x"01";
+								JACKPOS <= JACKPOS - x"28";
+							else
+								delayj1 := delayj1 + x"01";
+							end if;
+						end if;
+					else
+						JUMPSTATE <= x"02";
+					end if;
+				when x"02" => -- Caindo
+					if(PLATFORM(conv_integer(JACKPOS) + 40) = '0') then
+						if(delayj1 >= x"00005FFF") then
+							delayj1 := x"00000000";
+							JACKPOS <= JACKPOS + x"28";
+						else
+							delayj1 := delayj1 + x"01";
+						end if;
+					else 
+						JUMPSTATE <= x"00";
+					end if;
+				when others =>
+			end case;
+			case JACKSTATE is -- Controle de movimento
 				when x"00" =>
 					case key is
-						when x"61" => -- A
+						when x"61" => -- A -- Esquerda
 							if(not((conv_integer(JACKPOS) mod 40) = 0)) then
 								JACKPOS <= JACKPOS - x"01";
-								if(PLATFORM(conv_integer(JACKPOS) + 40) = 0) then
-									FALL <= 1;
-								end if;
 							end if;
+--							if(PLATFORM(conv_integer(JACKPOS) + 40) = '0') then
+--								JUMPSTATE <= x"02";
+--							end if;
 						when x"20" => -- Space -- new
-							if(not(JUMP)) then
-								JUMP <= '1';
+							if(JUMPSTATE = x"00") then
+								JUMPSTATE <= x"01";
 							end if; -- end new
-						when x"64" => -- D
+						when x"64" => -- D -- Direita
 							if(not((conv_integer(JACKPOS) mod 40) = 39)) then
 								JACKPOS <= JACKPOS + x"01";
-								if(PLATFORM(conv_integer(JACKPOS) + 40) = 0) then
-									FALL <= 1;
-								end if;
 							end if;
+--							if(PLATFORM(conv_integer(JACKPOS) + 40) = '0') then
+--								JUMPSTATE <= x"02";
+--							end if;
 						when others =>
 					end case;
 					JACKSTATE <= x"01";
 				when x"01" =>
-					if JDELAY >= x"0000FFFF" then
+					if JDELAY >= x"00000FFF" then
 						JDELAY <= x"00000000";
 						JACKSTATE <= x"00";
 					else
@@ -76,25 +111,6 @@ begin
 			end case;
 		end if;
 	end process;
-	process(clk, JUMP, FALL) -- Jump state --new
-		variable delay: std_logic_vector(31 downto 0) := x"00000000";
-	begin
-		if(clk'event and clk='1' and (JUMP='1' or FALL='1') then
-			while(delay <= 50000000) loop --ajustar
-				if(JACKPOS < x"28" or FALL = '1' or PLATFORM(conv_integer(JACKPOS) - 40) = '1') then  --40
-					exit;
-				end if;
-				JACKPOS <= JACKPOS - x"28"; --40
-				delay <= delay + x"01";
-			end loop;
-			JUMP <= '0';
-			FALL <= '1';
-			while(JACKPOS > x"487" or PLATFORM(conv_integer(JACKPOS) + 40) = '0') loop --1159
-				JACKPOS <= JACKPOS + x"28";
-			end loop;
-			FALL <='0';
-		end if;
-	end process; -- end new
 			
 	process(clk, reset) -- Draw video
 	begin
@@ -139,9 +155,9 @@ begin
 					videochar(15 downto 12) <= "0000";
 					videochar(11 downto 8) <= x"A";
 					videochar(7 downto 0) <= x"3A";
-					videopos(15 downto 0) <= 614;
+					videopos(15 downto 0) <= x"0266";
 					videodraw <= '1';
-					VIDEOE <= x"05"
+					VIDEOE <= x"05";
 				when others =>
 					videodraw <= '0';
 					VIDEOE <= x"00";

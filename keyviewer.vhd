@@ -83,9 +83,9 @@ begin
 							if(not((conv_integer(JACKPOS) mod 40) = 0)) then
 								JACKPOS <= JACKPOS - x"01";
 							end if;
---							if(PLATFORM(conv_integer(JACKPOS) + 40) = '0') then
---								JUMPSTATE <= x"02";
---							end if;
+							if(PLATFORM(conv_integer(JACKPOS) + 40) = '0' and JUMPSTATE != x"00") then
+								JUMPSTATE <= x"02";
+							end if;
 						when x"20" => -- Space -- new
 							if(JUMPSTATE = x"00") then
 								JUMPSTATE <= x"01";
@@ -94,9 +94,9 @@ begin
 							if(not((conv_integer(JACKPOS) mod 40) = 39)) then
 								JACKPOS <= JACKPOS + x"01";
 							end if;
---							if(PLATFORM(conv_integer(JACKPOS) + 40) = '0') then
---								JUMPSTATE <= x"02";
---							end if;
+							if(PLATFORM(conv_integer(JACKPOS) + 40) = '0' and JUMPSTATE != x"00") then
+								JUMPSTATE <= x"02";
+							end if;							
 						when others =>
 					end case;
 					JACKSTATE <= x"01";

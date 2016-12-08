@@ -16,7 +16,15 @@ end keyviewer;
 
 architecture behav of keyviewer is
 	type bg is array (1199 downto 0) of std_logic_vector(15 downto 0);
+	type lvlpf is array (1 downto 0) of std_logic_vector(1199 downto 0); --PLATFORMS
+	type lvlbb is array (1 downto 0) of std_logic_vector(1199 downto 0); -- BOMBS
+	type lvlbn is array (1 downto 0) of integer;
+	type lvlip is array (1 downto 0) of std_logic_vector(15 downto 0); -- INITIAL POSITION
+	type lvlep0 is array (1 downto 0) of std_logic_vector(15 downto 0); -- ENEMY POSITION
+	type lvlep1 is array (1 downto 0) of std_logic_vector(15 downto 0); -- ENEMY POSITION
+	
 	signal VIDEOE: std_logic_vector(7 downto 0);
+	
 	signal JACKPOS: std_logic_vector(15 downto 0);
 	signal JACKPOSA: std_logic_vector(15 downto 0);
 	signal JACKCHAR: std_logic_vector(7 downto 0);
@@ -24,24 +32,49 @@ architecture behav of keyviewer is
 	signal JDELAY: std_logic_vector(31 downto 0);
 	signal JACKSTATE: std_logic_vector(7 downto 0);
 	signal JUMPSTATE: std_logic_vector(7 downto 0);
-	signal PLATFORM: std_logic_vector(1199 downto 0) := (others => '0'); -- new
-	signal BACKGROUND: bg := (others => (others => '0'));
+	
+	signal LVLE: std_logic_vector(3 downto 0) := x"0";
+	signal PLATFORM: lvlpf := (0 => (172 downto 162|504 downto 493|796 downto 789|970 downto 963 => '1', others => '0'), 1 => (others => '0')); -- Falta nivel 2
+	signal BOMB: lvlbb := (0 => (203|206|209|319|320|455|458|461|479|480|535|538|541|639|640|799|800|926 => '1', others => '0'), 1 => (others => '0')); -- Falta nivel 2
+	signal BNUMBER :lvlbn := (18, 0); -- Falta nível 2
+	signal JACKPOSI: lvlip := (0 => (x"0072"), 1 => (others => '0')); -- Falta nivel 2
+	signal ENEMY0: lvlep0 := (0 => (x"007F"), 1 => (others => '0')); -- Falta nivel 2
+	signal ENEMY1: lvlep0 := (0 => (x"0481"), 1 => (others => '0')); -- Falta nivel 2
+	
+	signal BACKGROUND: bg := (others => (15 downto 12|11 downto 8|7|1 => '0', others => '1'));
 	signal BGMAKE: std_logic := '0';
 	signal BGDRAW: std_logic := '0';
 begin
-			PLATFORM(619 downto 609) <= "11111111111";
-			PLATFORM(39 downto 0) <= "1111111111111111111111111111111111111111";
-			PLATFORM(1199 downto 1160) <= "1111111111111111111111111111111111111111";
-	process(clk) -- Draw Background
+	process(clk, reset) -- Level Control
 	begin
+		
+	end process;
+	
+	process(clk, reset) -- Enemy 0 Control
+	begin
+		
+	end process;
+	process(clk, reset) -- Enemy 1 Control
+	begin
+		
+	end process;
+	process(clk, reset) -- Draw Background
+	begin
+		if(reset = '1') then
+			BGMAKE <= '0';
+			BACKGROUND <= (others => (15 downto 12|11 downto 8|7|1 => '0', others => '1'));
+		end if;
 		if(BGMAKE = '0') then
 			for I in 0 to 1199 loop
 				if(PLATFORM(I) = '1') then
 					BACKGROUND(I)(15 downto 12) <= x"0";
 					BACKGROUND(I)(11 downto 8) <= x"B";
 					BACKGROUND(I)(7 downto 0) <= x"02";
-				else
-					BACKGROUND(I) <= "0000000001111101";
+				elsif(BOMB(I) = '1') then
+					BACKGROUND(I)(15 downto 12) <= x"0";
+					BACKGROUND(I)(11 downto 8) <= x"9";
+					BACKGROUND(I)(7 downto 0) <= x"2A";
+					--BACKGROUND(I) <= "0000000001111101";
 				end if;
 			end loop;
 			BGMAKE <= '1';

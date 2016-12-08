@@ -37,6 +37,7 @@ begin
 		if(BGMAKE = '0') then
 			for I in 0 to 1199 loop
 				if(PLATFORM(I) = '1') then
+					BACKGROUND(I)(15 downto 12) <= x"0";
 					BACKGROUND(I)(11 downto 8) <= x"B";
 					BACKGROUND(I)(7 downto 0) <= x"02";
 				else
@@ -46,7 +47,7 @@ begin
 			BGMAKE <= '1';
 		end if;
 	end process;
-	
+
 	process(clk, reset) --Jack movement
 		variable delayj1: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para mudar de posicao -- ajustar max
 		variable delayj2: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para parar de subir -- ajustar max
@@ -63,14 +64,14 @@ begin
 				JUMPSTATE <= x"02";
 			end if;
 			case JUMPSTATE is -- Controle de pulo
-				when x"00" => -- Parado
+				when x"00" => -- Parado (vertical)
 				when x"01" => -- Subindo
 					if(PLATFORM(conv_integer(JACKPOS) - 40) = '0') then
-						if(delayj2 >= x"0000000F") then --ajustar
+						if(delayj2 >= x"00000010") then --ajustar
 							delayj2 := x"00000000"; --ajustar
 							JUMPSTATE <= x"02";
 						else
-							if(delayj1 >= x"00005FFF") then --ajustar
+							if(delayj1 >= x"00000FFF") then --ajustar
 								delayj1 := x"00000000"; -- ajustar
 								delayj2 := delayj2 + x"01";
 								JACKPOS <= JACKPOS - x"28";
@@ -85,7 +86,7 @@ begin
 					end if;
 				when x"02" => -- Caindo
 					if(PLATFORM(conv_integer(JACKPOS) + 40) = '0') then
-						if(delayj1 >= x"00005FFF") then -- ajustar
+						if(delayj1 >= x"00000FFF") then -- ajustar
 							delayj1 := x"00000000"; --ajustar
 							JACKPOS <= JACKPOS + x"28";
 						else
@@ -115,7 +116,7 @@ begin
 					end case;
 					JACKSTATE <= x"01";
 				when x"01" =>
-					if JDELAY >= x"00000FFF" then --ajustar
+					if JDELAY >= x"00005FFF" then --ajustar
 						JDELAY <= x"00000000"; --ajustar
 						JACKSTATE <= x"00";
 					else
@@ -125,7 +126,7 @@ begin
 			end case;
 		end if;
 	end process;
-			
+
 	process(clk, reset) -- Draw video
 	VARIABLE DRAWPOS: std_logic_vector(15 downto 0) := (others => '0');
 	begin

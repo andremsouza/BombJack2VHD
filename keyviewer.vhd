@@ -186,7 +186,7 @@ begin
 				BGREMAKE <= '0';
 			end if;
 			if(JACKPOS = ENEMY0POS or JACKPOS = ENEMY1POS) then
-				LVLSTATE <= 2;
+				LVLSTATE <= 3;
 			end if;
 			case LVLSTATE is
 				when 0 =>
@@ -203,7 +203,7 @@ begin
 						LVLSTATEA <= LVLSTATE;
 					end if;
 				when 1 =>
-						if (BOMB(LVLSTATE)(conv_integer(JACKPOS)) = '1' or BOMB(LVLSTATE)(conv_integer(JACKPOS) - 40) = '1') then
+					if (BOMB(LVLSTATE)(conv_integer(JACKPOS)) = '1' or BOMB(LVLSTATE)(conv_integer(JACKPOS) - 40) = '1') then
 						BOMB(LVLSTATE)(conv_integer(JACKPOS)) <= '0';
 						BOMB(LVLSTATE)(conv_integer(JACKPOS) - 40) <= '0';
 						BNUMBER(LVLSTATE) <= BNUMBER(LVLSTATE) - 1;

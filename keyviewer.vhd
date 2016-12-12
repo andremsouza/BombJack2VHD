@@ -172,8 +172,10 @@ begin
 			EMAXDELAY <= x"0000FFFF";
 		elsif(clk'event and clk = '1') then
 			if(LVLSTATEA /= LVLSTATE) then
-				if(conv_integer(EMAXDELAY) >= 5000) then
-					EMAXDELAY <= EMAXDELAY - x"4E20";
+				if(EMAXDELAY > x"00004E20") then
+					EMAXDELAY <= EMAXDELAY - x"00004E20";
+				else
+					EMAXDELAY <= x"00000FFF";
 				end if;
 			end if;
 			if(BGREMAKE = '1') then

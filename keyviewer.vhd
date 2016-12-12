@@ -3,7 +3,6 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
-use ieee.math_real.all;
 
 entity keyviewer is
 	port(
@@ -18,11 +17,11 @@ end keyviewer;
 
 architecture behav of keyviewer is
 	type bg is array (0 to 1199) of std_logic_vector(15 downto 0);
-	type lvlpf is array (2 downto 0) of std_logic_vector(0 to 1199); --PLATFORMS
-	type lvlbb is array (1 downto 0) of std_logic_vector(0 to 1199); -- BOMBS
-	type lvlbn is array (1 downto 0) of integer;
-	type lvlip is array (2 downto 0) of std_logic_vector(0 to 15); -- INITIAL POSITION
-	type lvlep is array (1 downto 0) of std_logic_vector(0 to 15); -- ENEMY POSITION
+	type lvlpf is array (3 downto 0) of std_logic_vector(0 to 1199); --PLATFORMS
+	type lvlbb is array (2 downto 0) of std_logic_vector(0 to 1199); -- BOMBS
+	type lvlbn is array (2 downto 0) of integer;
+	type lvlip is array (3 downto 0) of std_logic_vector(0 to 15); -- INITIAL POSITION
+	type lvlep is array (2 downto 0) of std_logic_vector(0 to 15); -- ENEMY POSITION
 	
 	signal VIDEOE: std_logic_vector(7 downto 0);
 	
@@ -40,25 +39,27 @@ architecture behav of keyviewer is
 		(
 		0 => (0 to 39|1160 to 1199|172 downto 162|504 downto 493|796 downto 789|970 downto 963 => '1', others => '0'), 
 		1 => (0 to 39|1160 to 1199|217 to 225|280 to 290|610 to 615|630 to 639|960 to 971 => '1', others => '0'),
-		2 => (others => '0')
+		2 => (0 to 39|1160 to 1199|170 to 174|185 to 189|407 to 411|425 to 429|724 to 729|750 to 755|974 to 985 => '1', others => '0'),
+		3 => (others => '0')
 		);
 	signal BOMB: lvlbb := 
 		(
 		0 => (203|206|209|319|320|455|458|461|479|480|535|538|541|639|640|799|800|926 => '1', others => '0'), 
-		1 => (216|249|336|456|466|569|576|586|671|674|677|706|826|922|925|928|931|946 => '1', others => '0')
+		1 => (216|249|336|456|466|569|576|586|671|674|677|706|826|922|925|928|931|946 => '1', others => '0'),
+		2 => (131|135|144|147|295|304|371|387|400|455|464|615|624|686|775|784|939|1019|1139 => '1', others => '0')
 		);
-	signal BNUMBER: lvlbn := (0 => 18, 1 => 18);
-	signal JACKPOSI: lvlip := (0 => (x"0072"), 1 => x"004A", 2 => x"0243");
+	signal BNUMBER: lvlbn := (0 => 18, 1 => 18, 2 => 19);
+	signal JACKPOSI: lvlip := (0 => (x"0072"), 1 => x"004A", 2 => x"0160",3 => x"0243");
 	
 	signal ENEMYCHAR: std_logic_vector(7 downto 0) := x"04";
 	signal ENEMYCOLOR: std_logic_vector(3 downto 0) := x"F";
 	signal EDELAY: std_logic_vector(31 downto 0);
 	
-	signal ENEMY0: lvlep := (0 => (x"007F"), 1 => x"0399");
+	signal ENEMY0: lvlep := (0 => (x"007F"), 1 => x"0399", 2 => x"03AE");
 	signal ENEMY0POS: std_logic_vector(15 downto 0);
 	signal ENEMY0POSA: std_logic_vector(15 downto 0) := x"FFFF";
 	signal E0STATE: std_logic_vector(7 downto 0);
-	signal ENEMY1: lvlep := (0 => (x"0481"), 1 => x"047A");
+	signal ENEMY1: lvlep := (0 => (x"0481"), 1 => x"047A", 2=> x"047E");
 	signal ENEMY1POS: std_logic_vector(15 downto 0);
 	signal ENEMY1POSA: std_logic_vector(15 downto 0) := x"FFFF";
 	signal E1STATE: std_logic_vector(7 downto 0);
@@ -73,7 +74,7 @@ begin
 		variable delay0: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para mudar de posicao -- ajustar max
 		variable lr: std_logic := '0';
 	begin
-		if(reset = '1') then
+		if(reset = '1' or key = x"72") then
 			ENEMY0POS <= ENEMY0(0);
 			E0STATE <= x"00";
 			delay0 := x"00000000";
@@ -117,7 +118,7 @@ begin
 		variable delay1: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para mudar de posicao -- ajustar max
 		variable lr: std_logic := '0';
 	begin
-		if(reset = '1') then
+		if(reset = '1' or key = x"72") then
 			ENEMY1POS <= ENEMY1(0);
 			E1STATE <= x"00";
 			delay1 := x"00000000";
@@ -161,12 +162,15 @@ begin
 	process(clk, reset) -- Level Control
 		variable delaylc: std_logic_vector(7 downto 0) := x"00";
 	begin
-		if(reset = '1') then
+		if(reset = '1' or key = x"72") then
 			LVLSTATE <= 0;
-			BOMB <=
-				(0 => (203|206|209|319|320|455|458|461|479|480|535|538|541|639|640|799|800|926 => '1', others => '0'), 
-				1 => (216|249|336|456|466|569|576|586|671|674|677|706|826|922|925|928|931|946 => '1', others => '0'));
-			BNUMBER <= (0 => 18, 1 => 18);
+			BOMB <= 
+				(
+				0 => (203|206|209|319|320|455|458|461|479|480|535|538|541|639|640|799|800|926 => '1', others => '0'), 
+				1 => (216|249|336|456|466|569|576|586|671|674|677|706|826|922|925|928|931|946 => '1', others => '0'),
+				2 => (131|135|144|147|295|304|371|387|400|455|464|615|624|686|775|784|939|1019|1139 => '1', others => '0')
+				);
+			BNUMBER <= (0 => 18, 1 => 18, 2 => 19);
 			delaylc := x"00";
 			LVLSTATEA <= 99;
 			EMAXDELAY <= x"0000FFFF";
@@ -206,16 +210,32 @@ begin
 						BGREMAKE <= '1';
 					end if;
 					if(BNUMBER(LVLSTATE) = 0) then
-						LVLSTATE <= 0;
-						BOMB <=
-						(0 => (203|206|209|319|320|455|458|461|479|480|535|538|541|639|640|799|800|926 => '1', others => '0'), 
-						1 => (216|249|336|456|466|569|576|586|671|674|677|706|826|922|925|928|931|946 => '1', others => '0'));
-						BNUMBER <= (0 => 18, 1 => 18);
+						LVLSTATE <= 2;
 						BGREMAKE <= '1';
 					else
 						LVLSTATEA <= LVLSTATE;
 					end if;
 				when 2 =>
+					if (BOMB(LVLSTATE)(conv_integer(JACKPOS)) = '1' or BOMB(LVLSTATE)(conv_integer(JACKPOS) - 40) = '1') then
+						BOMB(LVLSTATE)(conv_integer(JACKPOS)) <= '0';
+						BOMB(LVLSTATE)(conv_integer(JACKPOS) - 40) <= '0';
+						BNUMBER(LVLSTATE) <= BNUMBER(LVLSTATE) - 1;
+						BGREMAKE <= '1';
+					end if;
+					if(BNUMBER(LVLSTATE) = 0) then
+						LVLSTATE <= 0;
+						BOMB <= 
+							(
+							0 => (203|206|209|319|320|455|458|461|479|480|535|538|541|639|640|799|800|926 => '1', others => '0'), 
+							1 => (216|249|336|456|466|569|576|586|671|674|677|706|826|922|925|928|931|946 => '1', others => '0'),
+							2 => (131|135|144|147|295|304|371|387|400|455|464|615|624|686|775|784|939|1019|1139 => '1', others => '0')
+							);
+						BNUMBER <= (0 => 18, 1 => 18, 2 => 19);
+						BGREMAKE <= '1';
+					else
+						LVLSTATEA <= LVLSTATE;
+					end if;
+				when 3 =>
 					if(delaylc > x"00") then
 						LVLSTATEA <= LVLSTATE;
 						delaylc := x"00";
@@ -228,14 +248,14 @@ begin
 	end process;
 	process(clk, reset) -- Draw Background
 	begin
-		if(reset = '1') then
+		if(reset = '1' or key = x"72") then
 			BGMAKE <= '0';
 			BACKGROUND <= (others => (15 downto 12|11 downto 8|7|1 => '0', others => '1'));
 		elsif(clk'event and clk='1') then
 			if(BGREMAKE = '1') then
 				BGMAKE <= '0';
 			end if;
-			if(BGMAKE = '0' and LVLSTATE /= 2) then
+			if(BGMAKE = '0' and LVLSTATE /= 3) then
 				for I in 0 to 1199 loop
 					if(PLATFORM(LVLSTATE)(I) = '1') then
 						BACKGROUND(I)(15 downto 12) <= x"0";
@@ -272,7 +292,7 @@ begin
 				BACKGROUND(7)(7 downto 0) <= x"20";
 				BGMAKE <= '1';
 			end if;
-			if(LVLSTATE = 2) then
+			if(LVLSTATE = 3) then
 				BACKGROUND <= (others => (15 downto 12|11 downto 8|7|1 => '0', others => '1'));
 				BACKGROUND(575)(15 downto 12) <= x"0";
 				BACKGROUND(575)(11 downto 8) <= x"F";
@@ -309,7 +329,7 @@ begin
 		variable delayj1: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para mudar de posicao -- ajustar max
 		variable delayj2: std_logic_vector(31 downto 0) := x"00000000"; -- tempo para parar de subir -- ajustar max
 	begin
-		if(reset = '1') then
+		if(reset = '1' or key = x"72") then
 			JACKCHAR <= x"01";
 			JACKCOLOR <= x"C";
 			JACKPOS <= JACKPOSI(LVLSTATE);
@@ -392,7 +412,7 @@ begin
 	variable score: std_logic_vector(7 downto 0) := x"00";
 	variable scoredraw: std_logic := '0';
 	begin
-		if (reset='1') then
+		if (reset='1' or key = x"72") then
 			VIDEOE <= x"00";
 			videodraw <= '0';
 			--JACKPOSA <= x"0000";
@@ -406,7 +426,7 @@ begin
 				BGDRAW <= '0';
 				scoredraw := '0';
 				DRAWPOS := x"0000";
-				if(LVLSTATE /= 2)then
+				if(LVLSTATE /= 3)then
 					score := score + x"01";
 				end if;
 			end if;
